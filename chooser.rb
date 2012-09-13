@@ -55,7 +55,7 @@ module Chooser
 
     # Come here to log in
     get '/account-login' do
-      p = Page.new 'Login'
+      p = Page.new('Login', ac_dot_js)
       p.h2! 'Welcome to FavColor!'
       p.payload! Forms.login
       [200, { 'Content-type' => 'text/html' }, p.to_s]
@@ -63,10 +63,17 @@ module Chooser
 
     # Come here to register a new account
     get '/account-create' do
-      p = Page.new 'First-time Login'
+      p = Page.new('First-time Login', ac_dot_js)
       p.h2! 'Welcome to FavColor!'
       p.payload! Forms.register
       [200, { 'Content-type' => 'text/html' }, p.to_s]
+    end
+
+    # ac.js comes here to see if we know this person
+    post '/account-status' do
+      email = Body::parse_body(request)['email']
+      json = '{"registered":' + ((database.find email) ? 'true' : 'false') + '}'
+      [200, { 'Content-type' => 'application/json' }, json]
     end
 
     # Kill session on logout
