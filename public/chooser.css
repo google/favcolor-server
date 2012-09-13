@@ -1,0 +1,34 @@
+
+body {
+    background: #fff;
+    color: #333;
+    font-family: 'Droid Sans', sans-serif;
+    margin-top: 20px;
+}
+a {
+    text-decoration: none;
+    font-weight: bold;
+    color: #111;
+}
+
+table {
+}
+td {
+    /* background: #444; */
+}
+td.delete {
+    background: black;
+}
+
+#data {
+    margin-left: 320px;
+}
+
+form {
+    margin-left: 15px;
+    }
+
+div.color {
+    width: 400px;
+    padding: 15px;
+}

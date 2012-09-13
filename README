@@ -1,0 +1,7 @@
+You'll need Ruby (I used a recent 1.9, compiled from source) and Sinatra ("gem install sinatra" should do the trick"). Then just say 
+
+rackup
+
+and you're on the air, by default on port 4567.  I needed to use 8000, so I said
+
+rackup -p 8000
