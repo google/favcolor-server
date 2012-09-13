@@ -89,7 +89,7 @@ module Chooser
         account = Account.new(params)
         database.save account
         session[:logged_in] = email
-        redirect '/'
+        update_ac_js account
       end
     end
 
@@ -113,7 +113,7 @@ module Chooser
 
           # success! Establish a session
           session[:logged_in] = email
-          redirect '/'
+          update_ac_js account
 
         else
           # wrong password or email
@@ -126,9 +126,44 @@ module Chooser
       end
     end
 
+    # will redirect back to '/'
+    def update_ac_js account
+      fields = "storeAccount: {\n"
+      ['email', 'displayName', 'photoUrl'].each do |name|
+        field = account[name]
+        fields += "#{name}: \"#{field}\",\n" if field && !field.empty?
+      end
+      fields += '}'
+      p = Page.new('Update ac.js', ac_dot_js(fields))
+      p.h2! 'Updating AccountChooser' # user shouldn't see this
+      [200, { 'Content-type' => 'text/html' }, p.to_s]
+    end
+
+    MARKETING_HEADERS = {
+      'Content-type' => 'text/html',
+      "Access-Control-Allow-Origin" => "*",
+      "Access-Control-Allow-Methods" => "GET, POST, OPTIONS",
+      "Access-Control-Max-Age" => "86400"
+    }
+    MARKETING_TEXT = "<p style='background: #ddaaaa;text-align: center'>" +
+      "FavColor — We know your favorite!</p>"
+
+    get '/login-marketing' do
+      [ 200, MARKETING_HEADERS, MARKETING_TEXT ]
+    end
+
     ### Utility code
 
     private
+    AC_JS = '<script type="text/javascript" ' +
+      'src="https://www.accountchooser.com/ac.js">' + "\n" +
+      "uiConfig: { title: \"Log in to FavColor\", " +
+      "branding: \"http://localhost:9292/login-marketing\"}"
+
+    def ac_dot_js(extras = '')
+      comma = extras.empty? ? '' : ','
+      AC_JS + comma + "\n" + extras + '</script>'
+    end
 
     def logger
       @logger = Logger.new(STDOUT) unless @logger
