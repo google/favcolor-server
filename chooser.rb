@@ -34,7 +34,7 @@ module Chooser
         # Session is active, branch to favorite-color app
         account = database.find email
         s = Color.chooser account
-        [200, { 'Content-type' => 'text/html' }, s]
+        [200, { 'Content-type' => 'text/html; charset=utf-8' }, s]
 
       else
         # No session, they have to log in
@@ -58,7 +58,7 @@ module Chooser
       p = Page.new('Login', ac_dot_js)
       p.h2! 'Welcome to FavColor!'
       p.payload! Forms.login
-      [200, { 'Content-type' => 'text/html' }, p.to_s]
+      [200, { 'Content-type' => 'text/html; charset=utf-8' }, p.to_s]
     end
 
     # Come here to register a new account
@@ -66,7 +66,7 @@ module Chooser
       p = Page.new('First-time Login', ac_dot_js)
       p.h2! 'Welcome to FavColor!'
       p.payload! Forms.register
-      [200, { 'Content-type' => 'text/html' }, p.to_s]
+      [200, { 'Content-type' => 'text/html; charset=utf-8' }, p.to_s]
     end
 
     # ac.js comes here to see if we know this person
@@ -105,7 +105,7 @@ module Chooser
       p = Page.new "Duplicate account!"
       p.h2! "Sorry, that email is taken."
       p.payload! Forms.dupe
-      [200, { 'Content-type' => 'text/html' }, p.to_s]
+      [200, { 'Content-type' => 'text/html; charset=utf-8' }, p.to_s]
     end
 
     # attempt to log in an existing account
@@ -143,11 +143,11 @@ module Chooser
       fields += '}'
       p = Page.new('Update ac.js', ac_dot_js(fields))
       p.h2! 'Updating AccountChooser' # user shouldn't see this
-      [200, { 'Content-type' => 'text/html' }, p.to_s]
+      [200, { 'Content-type' => 'text/html; charset=utf-8' }, p.to_s]
     end
 
     MARKETING_HEADERS = {
-      'Content-type' => 'text/html',
+      'Content-type' => 'text/html; charset=utf-8',
       "Access-Control-Allow-Origin" => "*",
       "Access-Control-Allow-Methods" => "GET, POST, OPTIONS",
       "Access-Control-Max-Age" => "86400"
