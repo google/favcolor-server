@@ -11,22 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+require 'uri'
 
 module Chooser
 
   class Body
-
     def self.parse_body(request)
       request.body.rewind
-      paramtext = request.body.read.split '&' 
-      params = {}
-      paramtext.each do |p|
-        p.gsub!('%40', '@')
-        nv = p.split '='
-        params[nv[0]] = nv[1].gsub('+', ' ') if nv[1]
-      end
-      params
+      Hash[URI::decode_www_form(request.body.read)]
     end
-
   end
+
 end

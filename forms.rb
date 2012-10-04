@@ -18,7 +18,7 @@ module Chooser
 
   class Forms
 
-    def self.login
+    def self.login request
       b = Builder::XmlMarkup.new(:indent => 2)
       s = b.div do
         b.p "Thank you for visiting FavColor; " +
@@ -32,10 +32,18 @@ module Chooser
           b.p do
             b.span "Password"
             b.br
-            b.input(:id => 'password', :type => 'password', :name => 'password')
+            b.input(:id => 'password', :type => 'password',
+                    :name => 'password')
           end
           b.p do
             b.input(:type => 'submit', :value => 'Go!')
+          end
+          b.p do
+            b.span "Or, log in with Google: "
+            b.a(:href => RP.google_auth_uri(request)) do
+              b.img(:src => 'G.png', :alt => 'log in with Google',
+                    :style => 'height: 1.2em')
+            end
           end
         end
         b.form(:method => 'get', :action => '/account-create') do
@@ -56,7 +64,7 @@ module Chooser
       s.to_s
     end
 
-    def self.register
+    def self.register request
       b = Builder::XmlMarkup.new(:indent => 2)
       s = b.div do
         b.p "Thank you for your first visit to FavColor; " +
@@ -78,7 +86,19 @@ module Chooser
             b.input(:id => 'displayName', :name => 'displayName')
           end
           b.p do
+            b.span "URL of a picture?"
+            b.br
+            b.input(:id => 'photoUrl', :name => 'photoUrl')
+          end
+          b.p do
             b.input(:type => 'submit', :value => 'Go!')
+          end
+          b.p do
+            b.span "Or, log in with Google: "
+            b.a(:href => RP.google_auth_uri(request)) do
+              b.img(:src => 'G.png', :alt => 'log in with Google',
+                    :style => 'height: 1.2em')
+            end
           end
         end 
         b.form(:method => 'get', :action => '/account-login') do

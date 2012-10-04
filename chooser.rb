@@ -17,8 +17,11 @@ require './body'
 require './database'
 require './forms'
 require './color'
+require './rp'
 
 module Chooser
+
+  TEXT_HTML = { 'Content-type' => 'text/html; charset=utf-8' }
 
   class Chooser < Sinatra::Base
     enable :sessions
@@ -34,7 +37,7 @@ module Chooser
         # Session is active, branch to favorite-color app
         account = database.find email
         s = Color.chooser account
-        [200, { 'Content-type' => 'text/html; charset=utf-8' }, s]
+        [200, TEXT_HTML, s]
 
       else
         # No session, they have to log in
@@ -55,24 +58,68 @@ module Chooser
 
     # Come here to log in
     get '/account-login' do
-      p = Page.new('Login', ac_dot_js)
+      p = Page.new('Login', ac_dot_js(request))
       p.h2! 'Welcome to FavColor!'
-      p.payload! Forms.login
-      [200, { 'Content-type' => 'text/html; charset=utf-8' }, p.to_s]
+      p.payload! Forms.login(request)
+      [200, TEXT_HTML, p.to_s]
+    end
+
+    # Google comes back here with redirect
+    get '/gauth-redirect' do
+      if params['error']
+        auth_failed params['error_description']
+      elsif params['state']
+        # successful login with this email
+        email = params['state']
+        account = database.find email
+        if account
+          session[:logged_in] = email
+          update_ac_js account
+        else
+          read_google_account(params['code'], request, session)
+        end
+      else
+        read_google_account(params['code'], request, session)
+      end
+    end
+
+    def read_google_account(code, request, session)
+      google_account = Account.new(RP::fetch_google_account(code, request))
+      email = google_account['email']
+      existing_account = database.find email
+      if existing_account
+        ['displayName', 'photoUrl'].each do |field|
+          existing_account[field] = google_account[field]
+        end
+        google_account = existing_account
+      end
+
+      database.save google_account
+      session[:logged_in] = email
+      update_ac_js google_account
     end
 
     # Come here to register a new account
     get '/account-create' do
-      p = Page.new('First-time Login', ac_dot_js)
+      p = Page.new('First-time Login', ac_dot_js(request))
       p.h2! 'Welcome to FavColor!'
-      p.payload! Forms.register
-      [200, { 'Content-type' => 'text/html; charset=utf-8' }, p.to_s]
+      p.payload! Forms.register(request)
+      [200, TEXT_HTML, p.to_s]
     end
 
     # ac.js comes here to see if we know this person
     post '/account-status' do
-      email = Body::parse_body(request)['email']
-      json = '{"registered":' + ((database.find email) ? 'true' : 'false') + '}'
+      params = Body::parse_body(request)
+
+      json = nil
+      email = params['email']
+      if params['authUrl'].eql? 'http://google.com'
+        redirect =  RP::google_auth_uri(request, email)
+        json = "{ \"authUri\" : \"#{redirect}\" }"
+      else
+        json =
+          '{"registered":' + ((database.find email) ? 'true' : 'false') + '}'
+      end
       [200, { 'Content-type' => 'application/json' }, json]
     end
 
@@ -105,7 +152,7 @@ module Chooser
       p = Page.new "Duplicate account!"
       p.h2! "Sorry, that email is taken."
       p.payload! Forms.dupe
-      [200, { 'Content-type' => 'text/html; charset=utf-8' }, p.to_s]
+      [200, TEXT_HTML, p.to_s]
     end
 
     # attempt to log in an existing account
@@ -124,7 +171,7 @@ module Chooser
 
         else
           # wrong password or email
-          redirect '/account-login'
+          auth_failed 'Incorrect email or password.'
         end
 
       else
@@ -133,17 +180,24 @@ module Chooser
       end
     end
 
+    def auth_failed problem
+      p = Page.new 'Authorization failed'
+      p.h2! 'Authorization failed'
+      p.payload! "<p>#{problem} [<a href='/'>Try again</a>]</p>"
+      [403, TEXT_HTML, p.to_s]
+    end
+
     # will redirect back to '/'
     def update_ac_js account
       fields = "storeAccount: {\n"
-      ['email', 'displayName', 'photoUrl'].each do |name|
+      ['email', 'displayName', 'photoUrl', 'authUrl'].each do |name|
         field = account[name]
         fields += "#{name}: \"#{field}\",\n" if field && !field.empty?
       end
       fields += '}'
-      p = Page.new('Update ac.js', ac_dot_js(fields))
+      p = Page.new('Update ac.js', ac_dot_js(request, fields))
       p.h2! 'Updating AccountChooser' # user shouldn't see this
-      [200, { 'Content-type' => 'text/html; charset=utf-8' }, p.to_s]
+      [200, TEXT_HTML, p.to_s]
     end
 
     MARKETING_HEADERS = {
@@ -164,12 +218,13 @@ module Chooser
     private
     AC_JS = '<script type="text/javascript" ' +
       'src="https://www.accountchooser.com/ac.js">' + "\n" +
-      "uiConfig: { title: \"Log in to FavColor\", " +
-      "branding: \"http://localhost:9292/login-marketing\"}"
+      "uiConfig: { title: \"Log in to FavColor\", "
 
-    def ac_dot_js(extras = '')
+    def ac_dot_js(req, extras = '')
+      branding = "branding: \"#{req.scheme}://#{req.host}:#{req.port}/" +
+        "login-marketing\"}"
       comma = extras.empty? ? '' : ','
-      AC_JS + comma + "\n" + extras + '</script>'
+      AC_JS + branding + comma + "\n" + extras + '</script>'
     end
 
     def logger
