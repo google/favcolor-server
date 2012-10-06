@@ -113,7 +113,7 @@ module Chooser
 
       json = nil
       email = params['email']
-      if params['authUrl'].eql? 'http://google.com'
+      if params['providerId'].eql? 'google.com'
         redirect =  RP::google_auth_uri(request, email)
         json = "{ \"authUri\" : \"#{redirect}\" }"
       else
@@ -190,7 +190,7 @@ module Chooser
     # will redirect back to '/'
     def update_ac_js account
       fields = "storeAccount: {\n"
-      ['email', 'displayName', 'photoUrl', 'authUrl'].each do |name|
+      ['email', 'displayName', 'photoUrl', 'providerId'].each do |name|
         field = account[name]
         fields += "#{name}: \"#{field}\",\n" if field && !field.empty?
       end

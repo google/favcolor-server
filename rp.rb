@@ -19,8 +19,8 @@ require 'json'
 module Chooser
 
   AUTH_BASE = 'https://accounts.google.com/o/oauth2/auth'
-  CLIENT_ID = '588522613324.apps.googleusercontent.com'
-  CLIENT_SECRET = 'IeABV90daKbeB_cCyKPkSUjr'
+  CLIENT_ID = ENV['CLIENT_ID']
+  CLIENT_SECRET = ENV['CLIENT_SECRET']
   REDIRECT_URI = 'gauth-redirect'
   TOKEN_BASE = 'https://accounts.google.com/o/oauth2/token'
   USERINFO_BASE = 'https://www.googleapis.com/oauth2/v1/userinfo'
@@ -79,7 +79,7 @@ module Chooser
       json = JSON.parse(res.body)
       json['displayName'] = json['name']
       json['photoUrl'] = json['picture']
-      json['authUrl'] = 'http://google.com'
+      json['providerId'] = 'google.com'
       json
     end
 
