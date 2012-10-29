@@ -1,14 +1,19 @@
 
-body {
-    background: #fff;
-    color: #333;
-    font-family: 'Droid Sans', sans-serif;
-    margin-top: 20px;
-}
 a {
     text-decoration: none;
     font-weight: bold;
     color: #111;
+}
+
+div #left {
+    margin-top: 15px;
+    margin-left: 5px;
+/*
+    background-image: url("bic.jpg");
+    background-position: top center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    */
 }
 
 table {
@@ -28,7 +33,3 @@ form {
     margin-left: 15px;
     }
 
-div.color {
-    width: 400px;
-    padding: 15px;
-}

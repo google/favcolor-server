@@ -16,9 +16,13 @@ require 'uri'
 module Chooser
 
   class Body
-    def self.parse_body(request)
+    def self.parse_body request
       request.body.rewind
-      Hash[URI::decode_www_form(request.body.read)]
+      parse_parms(request.body.read)
+    end
+
+    def self.parse_parms string
+      Hash[URI::decode_www_form(string)]
     end
   end
 

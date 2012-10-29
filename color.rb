@@ -41,11 +41,13 @@ module Chooser
         "Here’s yours:"
       
       p = Page.new('Logged in!')
+      if account['photoUrl']
+        p.photo! account['photoUrl']
+      end
+        
       p.h2! "Welcome, #{name}!"
-      s = "<div class='color' style='border: 10px solid ##{color};'>" +
-        Forms.color(color, greeting) +     
-        Forms.logout +
-        "</div>"
+
+      s = Forms.color(color, greeting)
       
       p.payload! s
       p.to_s

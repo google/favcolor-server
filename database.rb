@@ -16,23 +16,52 @@ require 'json'
 module Chooser
 
   class Database
-    DIR='./accounts'
+    A_DIR='./accounts'
+    S_DIR='./states'
+    STATE_LIFETIME = 10.0
+
     def initialize
       @accounts = {}
-      Dir.entries(DIR).grep(/@/).each do |f|
-        a = Account.new(JSON.parse(File.read "#{DIR}/#{f}"))
+
+      Dir.entries(A_DIR).grep(/@/).each do |f|
+        a = Account.new(JSON.parse(File.read "#{A_DIR}/#{f}"))
         @accounts[a['email']] = a
       end
+
+      def get_state state
+        # TODO: Clean up states directory
+        return nil unless state
+        f = File.new "#{S_DIR}/#{state}"
+        if File.exists? f
+
+          # these things have a short lifetime
+          if (Time.now - f.mtime) < STATE_LIFETIME
+            File.read f
+          else
+            File.delete f
+            nil
+          end
+        else
+          nil
+        end
+      end
+
+      def set_state(state, value)
+        state = File.open("#{S_DIR}/#{state}", "w")
+        state.write value
+        state.close
+      end
+
     end
 
-    def find(email)
+    def find_account(email)
       @accounts[email]
     end
 
-    def save(account)
+    def save_account(account)
       name = account['email']
       @accounts[name] = account unless @accounts[name]
-      File.write("#{DIR}/#{name}", account.to_s)      
+      File.write("#{A_DIR}/#{name}", account.to_s)      
     end
   end
 

@@ -1,7 +1,36 @@
-You'll need Ruby (I used a recent 1.9, compiled from source) and Sinatra ("gem install sinatra" should do the trick"). Then just say 
+You'll need Ruby (I used a recent 1.9, compiled from source) and Sinatra 
+("gem install sinatra" should do the trick"). 
 
-rackup
+Since this is using server-to-server OAuth2 code flows, you need to set a 
+couple of environment variables for it to work, CLIENT_ID and CLIENT_SECRET.
+These come from the API Access tab of the developer console, at
+https://code.google.com/apis/console/
 
-and you're on the air, by default on port 4567.  I needed to use 8000, so I said
+I have two little scripts, startup.sh and debug.sh. The single optional
+argument is a port number.  Like so:
 
-rackup -p 8000
+startup.sh:
+_____________________
+export CLIENT_ID='...'
+export CLIENT_SECRET='...'
+
+if [ $1 ]
+then
+  nohup rackup -p $1 > Log &
+else
+  nohup rackup > Log &
+fi
+_____________________
+
+debug.sh
+_____________________
+export CLIENT_ID='...'
+export CLIENT_SECRET='...'
+
+if [ $1 ]
+then
+  rackup -p $1
+else
+  rackup
+fi
+_____________________
