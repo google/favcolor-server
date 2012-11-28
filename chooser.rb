@@ -45,7 +45,7 @@ module Chooser
         redirect '/account-login'
       end
     end
-    
+
     # Save favorite color, after they've picked it
     post '/set-color' do
       account = database.find_account session[:logged_in]
@@ -57,28 +57,9 @@ module Chooser
 
     ### Identity/Authentication/Authorization code
 
-    get '/blast' do
-      p = Page.new('Blast your AccountChooser', ac_dot_js(request))
-      p.h2! "Blast your AccountChooser"
-      t = "<p>Here’s your chance to force-update an account at " +
-        "accountchooser.com.</p>"
-      p.payload! (t + Forms.blast(request))
-      [200, TEXT_HTML, p.to_s]
-    end
-
-    post '/do-blast' do
-      params = Body::parse_body request
-      fields = "storeAccount: {\n"
-      params.each { |k, v| fields += "#{k}: \"#{v}\",\n" }
-      fields += '}'
-      p = Page.new('Blasting!', ac_dot_js(request, fields))
-      p.h2! 'Blasting!'
-      [200, TEXT_HTML, p.to_s]
-    end
-
     # Come here to log in
     get '/account-login' do
-      p = Page.new('Login', ac_dot_js(request))
+      p = Page.new('Login', ac_dot_js(request, RP::providers))
       p.h2! 'Welcome to FavColor!'
       p.payload! Forms.login(request)
       [200, TEXT_HTML, p.to_s]
@@ -299,12 +280,12 @@ module Chooser
 
     # will redirect back to '/'
     def update_ac_js account
-      fields = "storeAccount: {\n"
+      fields = "accountchooser.CONFIG.storeAccount = {\n"
       ['email', 'displayName', 'photoUrl', 'providerId'].each do |name|
         field = account[name]
         fields += "#{name}: \"#{field}\",\n" if is_useful?(field)
       end
-      fields += '}'
+      fields += '};'
       p = Page.new('Update ac.js', ac_dot_js(request, fields))
       p.h2! 'Updating AccountChooser' # user shouldn't see this
       [200, TEXT_HTML, p.to_s]
@@ -351,7 +332,8 @@ module Chooser
       updated = false
       if existing_account
         ['displayName', 'photoUrl', 'providerId'].each do |field|
-          if !existing_account[field].eql?(incoming[field])
+          # only update if old one not there
+          if incoming[field] && !existing_account[field]
             updated = true
             existing_account[field] = incoming[field]
           end
@@ -362,20 +344,23 @@ module Chooser
       end
 
       if updated
+        if !incoming.kind_of? Account
+          incoming = Account.new(incoming)
+        end
         database.save_account incoming
       end
       incoming
     end
 
     AC_JS = '<script type="text/javascript" ' +
-      'src="https://www.accountchooser.com/ac.js">' + "\n" +
-      "uiConfig: { title: \"Log in to FavColor\", "
+      'src="https://www.accountchooser.com/ac.js" ></script>' + "\n" +
+      "<script type='text/javascript'>\n" +
+      "accountchooser.CONFIG.uiConfig = {\n  title: \"Log in to FavColor\",\n"
 
     def ac_dot_js(req, extras = '')
-      branding = "branding: \"#{req.scheme}://#{req.host}:#{req.port}/" +
-        "login-marketing\"}"
-      comma = extras.empty? ? '' : ','
-      AC_JS + branding + comma + "\n" + extras + '</script>'
+      branding = "  branding: \"#{req.scheme}://#{req.host}:#{req.port}/" +
+        "login-marketing\"\n};\n"
+      AC_JS + branding + extras + "\n</script>"
     end
 
     def logger

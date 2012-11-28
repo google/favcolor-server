@@ -45,6 +45,11 @@ module Chooser
 
   class RP # relying party
 
+    def self.providers
+      ' accountchooser.CONFIG.providers = ' +
+        '[ "google.com", "facebook.com", "live.com" ];'
+    end
+
     def self.auth_uri(params, request, state)
       provider = params['providerId']
       email = params['email']
@@ -86,7 +91,7 @@ module Chooser
         params += "&response_type=id_token"
       end
       if email
-        params += "&user_id=#{email}" 
+        params += "&userhint=#{email}" 
       end
       G_AUTH_BASE + '?' + URI.escape(params)
     end
