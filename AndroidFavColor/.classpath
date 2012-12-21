@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="gen"/>
+	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
+	<classpathentry kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/AmbilWarna"/>
+	<classpathentry kind="lib" path="/Users/twbray/dev/android-sdk-mac_86/extras/google/google_play_services/libs/google-play-services.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/authorized-activity"/>
+	<classpathentry kind="output" path="bin/classes"/>
+</classpath>

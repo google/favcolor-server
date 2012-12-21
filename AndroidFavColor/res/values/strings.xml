@@ -1,0 +1,14 @@
+<resources>
+
+    <string name="app_name">FavColor</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="your_color">We know your favorite color!  Tap to change it.</string>
+    <string name="unknown_color">We don’t know your favorite color, so we’ve picked one at random. Tap to change it.</string>
+    <string name="hello">Hello</string>
+    <string name="menu_settings">Settings</string>
+    <string name="title_activity_main">FavColor</string>
+    <string name="fetching">Looking up your favorite color</string>
+    <string name="switcher">Switch accounts</string>
+    <string name="not_found">Sorry&#8230; we looked, but couldn&#x2019;t find your favorite color.</string>
+
+</resources>
