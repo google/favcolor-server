@@ -27,31 +27,23 @@ module Chooser
         a = Account.new(JSON.parse(File.read "#{A_DIR}/#{f}"))
         @accounts[a['email']] = a
       end
+    end
 
-      def get_state state
-        # TODO: Clean up states directory
-        return nil unless state
-        f = File.new "#{S_DIR}/#{state}"
-        if File.exists? f
-
-          # these things have a short lifetime
-          if (Time.now - f.mtime) < STATE_LIFETIME
-            File.read f
-          else
-            File.delete f
-            nil
-          end
-        else
-          nil
-        end
+    def get_state state
+      # TODO: Clean up states directory
+      return nil unless state
+      f = File.new "#{S_DIR}/#{state}"
+      if File.exists? f
+        File.read f
+      else
+        nil
       end
+    end
 
-      def set_state(state, value)
-        state = File.open("#{S_DIR}/#{state}", "w")
-        state.write value
-        state.close
-      end
-
+    def set_state(state, value)
+      state = File.open("#{S_DIR}/#{state}", "w")
+      state.write value
+      state.close
     end
 
     def find_account(email)

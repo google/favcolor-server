@@ -46,13 +46,52 @@ module Chooser
       end
     end
 
+    # Only for our native Android app; a POST so they can send along
+    #  the secret ID Token
+    #
+    post '/get-color' do
+      params = Body::parse_json request
+      params = RP::from_id_token params['id-token']
+      email = params['email']
+      if email
+        account = database.find_account email
+        if account
+          fields = ['email', 'displayName', 'photoUrl', 'color']
+          fields = fields.select { |field| is_useful?(account[field]) }
+          fields = fields.map { |field| "\"#{field}\":\"#{account[field]}\"" }
+          json = "{" + fields.join(',') + "}"
+          [200, APPLICATION_JSON, json]
+        else
+          [404, nil, nil]
+        end
+      else
+        [404, nil, nil]
+      end
+    end
+
     # Save favorite color, after they've picked it
     post '/set-color' do
-      account = database.find_account session[:logged_in]
-      params = Body::parse_body request
-      account['color'] = params['color']
-      database.save_account account
-      redirect '/'
+      id_token = params['id_token']
+      if id_token
+        # coming in from Android client
+        jwt = RP::from_id_token id_token
+        email = jwt['email']
+      else
+        email = session[:logged_in]
+      end
+
+      if email && database.find_account(email)
+        account = database.find_account email
+        account['color'] = params['color']
+        database.save_account account
+        if id_token
+          [200, nil, nil]
+        else
+          redirect '/'
+        end
+      else
+        [404, nil, nil]
+      end
     end
 
     ### Identity/Authentication/Authorization code
@@ -121,14 +160,17 @@ module Chooser
 
     # ac.js comes here to see if we know this person
     post '/account-status' do
-      params = Body::parse_body(request)
+      params = Body::parse_form(request)
 
-      # speculatively save ac.js fields into a new account
-      update_account params
+      # speculatively save ac.js fields into a new account IF there's an IDP
+      email = params['email']
+      registered = database.find_account email
+      if params['providerId']
+        update_account params
+      end
 
       state = make_state
       auth_uri = RP::auth_uri(params, request, state)
-      email = params['email']
       
       if auth_uri
         database.set_state(state, email)
@@ -136,7 +178,7 @@ module Chooser
       else
         account = database.find_account email
         [ 200, APPLICATION_JSON,
-          '{"registered":' + ((account) ? 'true' : 'false') + '}']
+          '{"registered":' + ((registered) ? 'true' : 'false') + '}']
       end
     end
 
@@ -148,7 +190,7 @@ module Chooser
 
     # Creation form submission
     post '/new-login' do
-      params = Body::parse_body request
+      params = Body::parse_form request
       email = params['email']
       provider = params['providerId']
 
@@ -205,7 +247,7 @@ module Chooser
 
     # login form submission
     post '/done-login' do
-      params = Body::parse_body request
+      params = Body::parse_form request
       email = params['email']
       provider = params['providerId']
 
@@ -297,7 +339,7 @@ module Chooser
       "Access-Control-Allow-Methods" => "GET, POST, OPTIONS",
       "Access-Control-Max-Age" => "86400"
     }
-    MARKETING_TEXT = "<img src=\"http://localhost:9292/g60.png\" " +
+    MARKETING_TEXT = "<img src=\"https://favcolor.net/g60.png\" " +
       "style=\"float:left;width: 150px;\"/>\n" +
       "<p style='margin-left: 160px;'>" +
       "FavColor — We know your favorite!</p>"
@@ -322,6 +364,11 @@ module Chooser
       account = Account.new(RP::fetch_account(provider, code, request))
       account = update_account account
       session[:logged_in] = account['email']
+
+      # we want to update accountchooser with whoever they logged in with,
+      #  not who we might think their primary IDP is.
+      account = account.clone
+      account['providerId'] = RP::provider_name provider
       update_ac_js account
     end
 
@@ -358,7 +405,7 @@ module Chooser
       "accountchooser.CONFIG.uiConfig = {\n  title: \"Log in to FavColor\",\n"
 
     def ac_dot_js(req, extras = '')
-      branding = "  branding: \"#{req.scheme}://#{req.host}:#{req.port}/" +
+      branding = "  branding: \"https://#{req.host}/" +
         "login-marketing\"\n};\n"
       AC_JS + branding + extras + "\n</script>"
     end

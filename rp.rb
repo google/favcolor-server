@@ -15,6 +15,7 @@
 require 'net/http'
 require 'uri'
 require 'json'
+require 'google-id-token'
 
 module Chooser
 
@@ -43,11 +44,27 @@ module Chooser
   LIVE_TOKEN_BASE = 'https://login.live.com/oauth20_token.srf'
   LIVE_USERINFO_BASE = 'https://apis.live.net/v5.0/me'
 
+  WEB_CLIENT_ID = '424861364121.apps.googleusercontent.com'
+  ANDROID_CLIENT_ID = '424861364121-4iopvg03qs4aj3emvtj1u55i2e0bhsnh.apps.googleusercontent.com'
+
+  PROVIDER_NAMES = {
+    :google => 'google.com', :facebook => 'facebook.com', :live => 'live.com'
+  }
+
   class RP # relying party
+
+    def self.provider_name(provider)
+      PROVIDER_NAMES[provider]
+    end
 
     def self.providers
       ' accountchooser.CONFIG.providers = ' +
         '[ "google.com", "facebook.com", "live.com" ];'
+    end
+
+    def self.from_id_token(token)
+      validator = GoogleIDToken::Validator.new
+      validator.check(token, WEB_CLIENT_ID)
     end
 
     def self.auth_uri(params, request, state)
@@ -79,19 +96,20 @@ module Chooser
     def self.google_auth_uri(request, fetch, email, state)
       params = "client_id=#{G_CLIENT_ID}"
       params += "&state=#{state}" if state
+      fetch = true
       if fetch
         params += "&scope=openid email profile"
         params +=
           "&redirect_uri=#{RP::redirect_uri(request, G_FETCH_REDIR)}"
         params += "&response_type=code"
       else
-        params += "&scope=email"
+        params += "&scope=openid email"
         params +=
           "&redirect_uri=#{RP::redirect_uri(request, G_LOGIN_REDIR)}"
         params += "&response_type=id_token"
       end
       if email
-        params += "&userhint=#{email}" 
+        params += "&login_hint=#{email}" 
       end
       G_AUTH_BASE + '?' + URI.escape(params)
     end
@@ -100,8 +118,7 @@ module Chooser
       params = "client_id=#{LIVE_CLIENT_ID}"
       params += "&scope=#{LIVE_SCOPE}"
       params += "&response_type=code"
-      params += "&redirect_uri=http://twbray-macbookpro.local:9292/liveauth-redirect"
-      # params += "&redirect_uri=#{RP::redirect_uri(request, LIVE_REDIR)}"
+      params += "&redirect_uri=https://favcolor.net/liveauth-redirect"
       LIVE_AUTH_BASE + '?' + URI.escape(params)
     end
 
@@ -209,8 +226,7 @@ module Chooser
         'code' => code,
         'client_id' => LIVE_CLIENT_ID,
         'client_secret' => LIVE_CLIENT_SECRET,
-        # 'redirect_uri' => RP::redirect_uri(request, LIVE_REDIR),
-        'redirect_uri' => 'http://twbray-macbookpro.local:9292/liveauth-redirect',
+        'redirect_uri' => 'https://favcolor.net/liveauth-redirect',
         'grant_type' => 'authorization_code'
       }
       uri = URI(LIVE_TOKEN_BASE)
@@ -246,7 +262,7 @@ module Chooser
     end
 
     def self.redirect_uri(req, redirect)
-      "#{req.scheme}://#{req.host}:#{req.port}/#{redirect}"
+      "https://favcolor.net/#{redirect}"
     end
   end
 end

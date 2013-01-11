@@ -55,6 +55,7 @@ public class FavColorMain extends Activity implements DataReceiver {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // still buggy after all these years
         System.setProperty("http.keepAlive", "false");
 
         mRand = new Random();

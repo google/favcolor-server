@@ -36,7 +36,7 @@ module Chooser
       "<div class=\"span8\">\n" +
       "<div class=\"row\">\<div class=\"span12\">\n" +
       "<h2>H2 _PHOTO_</h2></div></div>\n" +
-      "<script src=\"http://code.jquery.com/jquery-latest.js\"></script>\n" +
+      "<script src=\"//code.jquery.com/jquery-latest.js\"></script>\n" +
       "<script src=\"js/bootstrap.min.js\"></script>\n" +
       NARRATIVE +
       PAYLOAD +
