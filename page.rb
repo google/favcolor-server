@@ -21,8 +21,8 @@ module Chooser
     
     HEAD = "<head>" +
       "SCRIPT\n" +
-      '<script type="text/javascript" src="jscolor/jscolor.js"></script>' +
-      "<link rel='stylesheet' type='text/css' href='/chooser.css' />\n" +
+      "<script type=\"text/javascript\" src=\"jscolor/jscolor.js\" ></script>" +
+      "<link rel=\"stylesheet\" type=\"text/css\" href=\"/chooser.css\" />\n" +
       "<title>Chooser: TITLE</title>\n" +
       "<link href=\"bootstrap/css/bootstrap.min.css\" rel=\"stylesheet\">\n" +
       "</head>"

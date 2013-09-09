@@ -5,15 +5,28 @@ a {
     color: #111;
 }
 
+#container {
+  margin-top: 15px;
+}
+
 div #left {
-    margin-top: 15px;
     margin-left: 5px;
-/*
-    background-image: url("bic.jpg");
-    background-position: top center;
-    background-attachment: fixed;
-    background-repeat: no-repeat;
-    */
+}
+
+#navbar {
+  float: right;
+  margin: 10px 10px 10px 0px;
+}
+#gatHolder {
+  background-image: url("nbg.png");
+  background-position: center;
+  -webkit-border-radius: 6px;
+  border-radius: 6px;
+  margin-top: 20px;
+}
+#colorFrame {
+  -webkit-border-radius: 12px;
+  border-radius: 12px;
 }
 
 table {
@@ -31,5 +44,5 @@ td.delete {
 
 form {
     margin-left: 15px;
-    }
+}
 

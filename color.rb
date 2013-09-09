@@ -25,7 +25,7 @@ module Chooser
       s
     end
 
-    def self.chooser(account)
+    def self.chooser(account, page, gat_mode = false)
       name = account['displayName']
       name ||= account['email']
       color = account['color']
@@ -40,17 +40,16 @@ module Chooser
       greeting += " Since we’re geeks, we give colors geeky names. " +
         "Here’s yours:"
       
-      p = Page.new('Logged in!')
-      if account['photoUrl']
-        p.photo! account['photoUrl']
+      if account['photoUrl'] && !gat_mode
+        page.photo! account['photoUrl']
       end
         
-      p.h2! "Welcome, #{name}!"
+      page.h2! "Welcome, #{name}!"
 
-      s = Forms.color(color, greeting)
+      s = Forms.color(color, greeting, gat_mode)
       
-      p.payload! s
-      p.to_s
+      page.payload! s
+      page.to_s
     end
   end
 

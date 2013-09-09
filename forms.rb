@@ -47,6 +47,10 @@ module Chooser
                   b.img(:src => 'fb.png', :alt => 'log in with Facebook',
                         :style => 'height: 1.2em')
                 end
+                b.button(:name => 'providerId', :value => 'persona.org') do
+                  b.img(:src => 'Mozilla.png', :alt => 'log in with Persona',
+                        :style => 'height: 1.2em')
+                end
 
                 b.hr
               end
@@ -147,8 +151,8 @@ module Chooser
                           :style => 'height: 1.2em')
                   end
                   b.button(:name => 'providerId', :value => 'facebook.com') do
-                  b.img(:src => 'fb.png', :alt => 'log in with Facebook',
-                        :style => 'height: 1.2em')
+                    b.img(:src => 'fb.png', :alt => 'log in with Facebook',
+                          :style => 'height: 1.2em')
                   end
                   
                   b.hr
@@ -176,39 +180,42 @@ module Chooser
                     "}"
 
 
-    def self.color(initial, greeting)
+    def self.color(initial, greeting, gat_mode)
+      dest = (gat_mode) ? '/gat' : '/'
+      action = '/set-color?dest=' + dest
       b = Builder::XmlMarkup.new(:indent => 2)
-      s = b.div do
-        b.div(:class => 'row') do
-          b.div(:class => 'span9',
-                :style => "border: 10px solid ##{initial};") do
-            b.div(:class => 'row') do
-              b.div(:class => 'offset1 span10') do
-                b.form(:method => 'post', :action => '/set-color') do
-                  b.p ""
-                  b.p greeting
-                  b.input(:class => CHOOSER_CONTROL,
-                          :value => initial,
-                          :name => 'color')
-                  b.p "If you don’t like this color, click on its " +
-                    "geek name just above, and pick a new one."
-                  b.p do
-                    b.input(:type => 'submit', :value => 'Set favorite color!')
-                  end
+      s = b.div(:class => 'row') do
+        b.div(:class => 'span9',
+              :id => 'colorFrame',
+              :style => "border: 10px solid ##{initial};") do
+          b.div(:class => 'row') do
+            b.div(:class => 'offset1 span10') do
+              b.form(:method => 'post', :action => action) do
+                b.p ""
+                b.p greeting
+                b.input(:class => CHOOSER_CONTROL,
+                        :value => initial,
+                        :name => 'color')
+                b.p "If you don’t like this color, click on its " +
+                  "geek name just above, and pick a new one."
+                b.p do
+                  b.input(:type => 'submit', :value => 'Set favorite color!')
                 end
               end
             end
           end
         end
-        b.div(:class => 'row') do
-          b.div(:class => 'span8') do
-            b.p
-            b.form(:method => 'post', :action => '/logout') do
-              b.input(:type => 'submit', :value => 'Log Out')
+        if !gat_mode
+          b.div(:class => 'row') do
+            b.div(:class => 'span8') do
+              b.p
+              b.form(:method => 'post', :action => '/logout') do
+                b.input(:type => 'submit', :value => 'Log Out')
+              end
             end
           end
-        end
-      end         
+        end         
+      end
       s.to_s
     end
 

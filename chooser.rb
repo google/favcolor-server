@@ -18,6 +18,8 @@ require './database'
 require './forms'
 require './color'
 require './rp'
+require './gat'
+require './persona'
 
 module Chooser
 
@@ -25,9 +27,22 @@ module Chooser
   APPLICATION_JSON = { 'Content-type' => 'application/json' }
 
   class Chooser < Sinatra::Base
-    enable :sessions
+    # enable :sessions
+    use Rack::Session::Cookie, :key => 'rack.session',
+                           :domain => 'favcolor.net',
+                           :path => '/',
+                           :expire_after => 2592000,
+                           :secret => 'orthoepy ftw',
+                           :old_secret => 'orthoepy ftl'
 
     ### App code
+    T451 = <<EOFEOF
+<html><head><title>451 Unavailable For Legal Reasons</title></head>
+<body><h2>451 Unavailable For Legal Reasons</h2></body></html>
+EOFEOF
+    get '/451' do
+      [451, TEXT_HTML, T451]
+    end
 
     # Home page
     get '/' do
@@ -37,8 +52,8 @@ module Chooser
       if email
         # Session is active, branch to favorite-color app
         account = database.find_account email
-        s = Color.chooser account
-        [200, TEXT_HTML, s]
+        s = Color.chooser(account, Page.new("Logged In!"))
+        return_html s
 
       else
         # No session, they have to log in
@@ -72,25 +87,98 @@ module Chooser
     # Save favorite color, after they've picked it
     post '/set-color' do
       id_token = params['id_token']
+      destination = params['dest'] || '/'
       if id_token
         # coming in from Android client
         jwt = RP::from_id_token id_token
         email = jwt['email']
+        puts "EMAIL FROM ID_TOKEN #{email}"
       else
+        # active session?
         email = session[:logged_in]
+        puts "EMAIL FROM SESSION #{email}"
+        if !email
+          email = GAT.get_session(request, database)
+          puts "EMAIL FROM GAT #{email}"
+        end
       end
 
-      if email && database.find_account(email)
-        account = database.find_account email
-        account['color'] = params['color']
-        database.save_account account
-        if id_token
-          [200, nil, nil]
+      if !email 
+        if destination == 'gat'
+          # launch GAT login process
+          return_html GAT.login_page(request.host)
         else
-          redirect '/'
+          redirect '/gat'
         end
       else
-        [404, nil, nil]
+
+        # we have a valid email
+        session[:logged_in] = email
+        if database.find_account(email)
+          account = database.find_account email
+          account['color'] = params['color']
+          database.save_account account
+          if id_token
+            [200, nil, nil]
+          else
+            redirect destination
+          end
+        else
+          [404, nil, nil]
+        end
+      end
+    end
+
+    ### GAT experiment
+
+    # called back by GAT, just dispatch to the GAT JavaScript
+    get '/gat-callback' do
+      GAT.callback_page('')
+    end
+    post '/gat-callback' do
+      request.body.rewind
+      GAT.callback_page(request.body.read)
+    end
+
+    get '/gat-signout' do
+      puts "GAT SIGNOUT"
+      session[:logged_in] = nil
+      redirect '/gat'
+    end
+
+    post '/gat-forgot' do
+      prob = GAT.forgot(params, request.ip)
+      if !prob
+        json = "{\"success\":true}"
+      else
+        json = "{\"error\":\"#{prob}\"}"
+      end
+      [200, APPLICATION_JSON, json]
+    end
+
+    # Home page
+    get '/gat' do
+
+      # active session?
+      email = session[:logged_in]
+      puts "EMAIL FROM SESSION #{email}"
+      if !email
+        email = GAT.get_session(request, database)
+        puts "EMAIL FROM GAT #{email}"
+      end
+
+      if !email
+        # launch GAT login process
+        return_html GAT.login_page(request.host)
+
+      else
+        session[:logged_in] = email
+
+        # Session is active, branch to favorite-color app
+        account = database.find_account(email)
+        puts "ACCOUNT FROM DB #{account}"
+        page = GAT.normal_page(request.host)
+        return_html Color.chooser(account, page, true)
       end
     end
 
@@ -101,7 +189,7 @@ module Chooser
       p = Page.new('Login', ac_dot_js(request, RP::providers))
       p.h2! 'Welcome to FavColor!'
       p.payload! Forms.login(request)
-      [200, TEXT_HTML, p.to_s]
+      return_html p.to_s
     end
 
     # Come here to register a new account
@@ -109,7 +197,37 @@ module Chooser
       p = Page.new('First-time Login', ac_dot_js(request))
       p.h2! 'Welcome to FavColor!'
       p.payload! Forms.register(request)
-      [200, TEXT_HTML, p.to_s]
+      return_html p.to_s
+    end
+
+    # launch Persona sign-in process
+    get '/persona-sign-in' do
+      return_html Persona.sign_in(params['email'])
+    end
+
+    # Check persona sign-in assertion
+    post '/persona-assertion' do
+      params = Body::parse_form(request)
+      assertion = params['assert']
+      if assertion == nil || assertion == "" 
+        auth_failed "Empty Persona assertion"
+      else
+        params = Persona.verify_assertion(assertion)
+        if params == nil
+          auth_failed "Unable to verify Persona assertion"
+        else
+          account = Account.new(params)
+          account = update_account account
+          session[:logged_in] = account['email']
+          [200]
+        end
+      end
+    end
+
+    get '/persona-succeeded' do
+      email = session[:logged_in]
+      account = database.find_account email
+      update_ac_js account
     end
 
     # Google redirect with #fragment if we're just logging in
@@ -121,7 +239,7 @@ module Chooser
         "</script>"
       p = Page.new('Redirecting', script)
       p.h2! 'Redirecting' # user should't see this
-      [200, TEXT_HTML, p.to_s]
+      return_html p.to_s
     end
 
     get '/gauth-login-2' do
@@ -135,10 +253,11 @@ module Chooser
       if params['error']
         auth_failed params['error_description']
       else
+        # puts "G CB"
+        # params.each {|k,v| puts " #{k} => #{v}"}
         auth_succeeded(:google, params)
       end
     end
-
 
     # Facebook redirects here
     get '/fbauth-redirect' do
@@ -174,6 +293,7 @@ module Chooser
       
       if auth_uri
         database.set_state(state, email)
+        puts "AUTH URI: #{auth_uri}"
         [ 200, APPLICATION_JSON, "{ \"authUri\" : \"#{auth_uri}\" }" ]
       else
         account = database.find_account email
@@ -242,7 +362,7 @@ module Chooser
       p = Page.new "Duplicate account!"
       p.h2! "Sorry, that email is taken."
       p.payload! Forms.dupe
-      [200, TEXT_HTML, p.to_s]
+      return_html p.to_s
     end
 
     # login form submission
@@ -321,6 +441,10 @@ module Chooser
     end
 
     # will redirect back to '/'
+    def return_html html
+      [200, TEXT_HTML, html]
+    end
+
     def update_ac_js account
       fields = "accountchooser.CONFIG.storeAccount = {\n"
       ['email', 'displayName', 'photoUrl', 'providerId'].each do |name|
@@ -330,7 +454,7 @@ module Chooser
       fields += '};'
       p = Page.new('Update ac.js', ac_dot_js(request, fields))
       p.h2! 'Updating AccountChooser' # user shouldn't see this
-      [200, TEXT_HTML, p.to_s]
+      return_html p.to_s
     end
 
     MARKETING_HEADERS = {
@@ -362,11 +486,11 @@ module Chooser
     def auth_succeeded(provider, params)
       code = params['code']
       account = Account.new(RP::fetch_account(provider, code, request))
-      account = update_account account
-      session[:logged_in] = account['email']
 
       # we want to update accountchooser with whoever they logged in with,
       #  not who we might think their primary IDP is.
+      account = update_account account
+      session[:logged_in] = account['email']
       account = account.clone
       account['providerId'] = RP::provider_name provider
       update_ac_js account

@@ -52,7 +52,7 @@ module Chooser
 
     def save_account(account)
       name = account['email']
-      @accounts[name] = account unless @accounts[name]
+      @accounts[name] = account
       File.write("#{A_DIR}/#{name}", account.to_s)      
     end
   end

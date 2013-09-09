@@ -44,11 +44,12 @@ module Chooser
   LIVE_TOKEN_BASE = 'https://login.live.com/oauth20_token.srf'
   LIVE_USERINFO_BASE = 'https://apis.live.net/v5.0/me'
 
-  WEB_CLIENT_ID = '424861364121.apps.googleusercontent.com'
-  ANDROID_CLIENT_ID = '424861364121-4iopvg03qs4aj3emvtj1u55i2e0bhsnh.apps.googleusercontent.com'
+  WEB_CLIENT_ID = ENV['WEB_CLIENT_ID']
+  ANDROID_CLIENT_ID = ENV['ANDROID_CLIENT_ID']
 
   PROVIDER_NAMES = {
-    :google => 'google.com', :facebook => 'facebook.com', :live => 'live.com'
+    :google => 'google.com', :facebook => 'facebook.com', :live => 'live.com',
+    :persona => 'persona.org'
   }
 
   class RP # relying party
@@ -59,7 +60,7 @@ module Chooser
 
     def self.providers
       ' accountchooser.CONFIG.providers = ' +
-        '[ "google.com", "facebook.com", "live.com" ];'
+        '[ "google.com", "facebook.com", "live.com", "persona.org" ];'
     end
 
     def self.from_id_token(token)
@@ -78,9 +79,15 @@ module Chooser
         fb_auth_uri(request, email, state)
       when 'live.com'
         live_auth_uri(request, email)
+      when 'persona.org'
+        persona_auth_uri(email)
       else
         nil
       end
+    end
+
+    def self.persona_auth_uri(email = "")
+      "https://favcolor.net/persona-sign-in?email=#{email}"
     end
 
     def self.fb_auth_uri(request, email, state)
@@ -99,9 +106,11 @@ module Chooser
       fetch = true
       if fetch
         params += "&scope=openid email profile"
+        # params += "&scope=openid email"
         params +=
           "&redirect_uri=#{RP::redirect_uri(request, G_FETCH_REDIR)}"
         params += "&response_type=code"
+        # params += "&response_type=id_token"
       else
         params += "&scope=openid email"
         params +=
@@ -241,7 +250,8 @@ module Chooser
         res.value # throws an exception
       end
 
-      token = JSON.parse(res.body)['access_token']
+      body = res.body
+      token = JSON.parse(body)['access_token']
 
       # fetch userinfo
       uri = URI LIVE_USERINFO_BASE
@@ -252,7 +262,8 @@ module Chooser
       end
 
       # parse json & twiddle field names
-      json = JSON.parse(res.body)
+      body = res.body
+      json = JSON.parse(body)
       json['email'] = json['emails']['account']
       json['displayName'] = json['name'] if json['name']
       json['photoUrl'] = json['picture'] if json['picture']
