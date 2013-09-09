@@ -114,7 +114,6 @@ EOFEOF
       request = JSON.generate(
         "assertion" => assertion,
         "audience" => "https://favcolor.net:443/")
-      puts "REQUEST: #{request}"
 
       uri = URI("https://verifier.login.persona.org/verify")
       post = Net::HTTP::Post.new(uri.path)
@@ -128,7 +127,6 @@ EOFEOF
         puts "OUCH! #{response}"
         nil
       else
-        puts "BODY #{response.body}"
         payload = JSON.parse(response.body)
         if payload['status'] != 'okay'
           return nil
@@ -144,9 +142,6 @@ EOFEOF
 
     def self.persona_script(email)
       "\n" + SCRIPT_BASE.gsub('_EMAIL_', email)
-    end
-
-    def to_s
     end
   end
 end
