@@ -1,4 +1,4 @@
-# Copyright 2012 Google Inc.
+# Copyright 2012-14 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,16 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 require 'json'
+require 'memcache'
 
 module Chooser
 
   class Database
     A_DIR='./accounts'
-    S_DIR='./states'
-    STATE_LIFETIME = 10.0
 
     def initialize
       @accounts = {}
+      @cache = Memcache.new(:server => "localhost:11211")
+      @r = Random.new
 
       Dir.entries(A_DIR).grep(/@/).each do |f|
         a = Account.new(JSON.parse(File.read "#{A_DIR}/#{f}"))
@@ -30,20 +31,21 @@ module Chooser
     end
 
     def get_state state
-      # TODO: Clean up states directory
       return nil unless state
-      f = File.new "#{S_DIR}/#{state}"
-      if File.exists? f
-        File.read f
-      else
-        nil
-      end
+      @cache.get('state ' + state)
     end
 
     def set_state(state, value)
-      state = File.open("#{S_DIR}/#{state}", "w")
-      state.write value
-      state.close
+      @cache.set('state ' + state, value, :expiry => 120)
+    end
+
+    def set_share(email)
+      key = @r.rand(489275195).to_s
+      @cache.set('share '  + key, email, :expiry => 24 * 60 * 60)
+      key
+    end
+    def get_share(key)
+      @cache.get('share ' + key)
     end
 
     def find_account(email)
@@ -63,6 +65,13 @@ module Chooser
       @fields = fields
     end
 
+    def idp_is_google?
+      return true if @fields['providerId'] == 'google.com'
+      providers = @fields['providerUserInfo']
+      return false unless providers
+      providers.find {|provider| provider['providerId'] == 'google.com'}
+    end
+
     def [](name)
       @fields[name]
     end
@@ -80,6 +89,4 @@ module Chooser
     end
 
   end
-
-
 end

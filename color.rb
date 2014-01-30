@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2012 Google Inc.
+# Copyright 2012-14 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,9 +25,12 @@ module Chooser
       s
     end
 
-    def self.chooser(account, page, gat_mode = false)
+    def self.favorite(account)
+      locals = {}
       name = account['displayName']
       name ||= account['email']
+      locals[:display_name] = name
+
       color = account['color']
       greeting = ''
       if (color)
@@ -37,19 +40,21 @@ module Chooser
           "we’re picking one at random."
         color = Color.random
       end
+      locals[:favorite_color] = color
+      r = color[0..1]; g = color[2..3]; b = color[4..5]
+      locals[:rgb] = "0x#{r}, 0x#{g}, 0x#{b}"
+
       greeting += " Since we’re geeks, we give colors geeky names. " +
         "Here’s yours:"
+      locals[:greeting] = greeting
       
-      if account['photoUrl'] && !gat_mode
-        page.photo! account['photoUrl']
+      if account['photoUrl'] 
+        photo = account['photoUrl']
+      else
+        photo = ''
       end
-        
-      page.h2! "Welcome, #{name}!"
-
-      s = Forms.color(color, greeting, gat_mode)
-      
-      page.payload! s
-      page.to_s
+      locals[:photo_url] = photo
+      locals
     end
   end
 

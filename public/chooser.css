@@ -5,12 +5,24 @@ a {
     color: #111;
 }
 
+h2 { 
+  margin-left: 0px;
+}
+
 #container {
   margin-top: 15px;
 }
 
 div #left {
     margin-left: 5px;
+}
+div #left-c {
+    margin-left: 10px;
+}
+
+div #left-c canvas {
+    margin-bottom: 10px;
+    box-shadow: 3px 3px 8px #222;
 }
 
 #navbar {

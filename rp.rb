@@ -1,5 +1,5 @@
 # encoding: utf-8
-# Copyright 2012 Google Inc.
+# Copyright 2012-14 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ module Chooser
   G_CLIENT_ID = ENV['GOOGLE_CLIENT_ID']
   G_CLIENT_SECRET = ENV['GOOGLE_CLIENT_SECRET']
   G_FETCH_REDIR = 'gauth-fetch-redirect'
-  G_LOGIN_REDIR = 'gauth-login-redirect'
   G_SCOPE = "openid email profile"
   G_TOKEN_BASE = 'https://accounts.google.com/o/oauth2/token'
   G_USERINFO_BASE = 'https://www.googleapis.com/oauth2/v1/userinfo'
@@ -32,7 +31,7 @@ module Chooser
   FB_APP_SECRET = ENV['FACEBOOK_APP_SECRET']
   FB_AUTH_BASE = 'https://www.facebook.com/dialog/oauth'
   FB_REDIR = 'fbauth-redirect'
-  FB_SCOPE = 'email'
+  FB_SCOPE = 'email publish_actions'
   FB_TOKEN_BASE = 'https://graph.facebook.com/oauth/access_token'
   FB_USERINFO_BASE = 'https://graph.facebook.com/me'
 
@@ -45,6 +44,7 @@ module Chooser
   LIVE_USERINFO_BASE = 'https://apis.live.net/v5.0/me'
 
   WEB_CLIENT_ID = ENV['WEB_CLIENT_ID']
+  WEB_CLIENT_SECRET = ENV['WEB_CLIENT_SECRET']
   ANDROID_CLIENT_ID = ENV['ANDROID_CLIENT_ID']
 
   PROVIDER_NAMES = {
@@ -73,8 +73,7 @@ module Chooser
       email = params['email']
       case provider
       when 'google.com'
-        have_extras = params['photoUrl'] && params['displayName']
-        google_auth_uri(request, !have_extras, email, state)
+        google_auth_uri(request, email, state)
       when 'facebook.com'
         fb_auth_uri(request, email, state)
       when 'live.com'
@@ -100,23 +99,13 @@ module Chooser
       FB_AUTH_BASE + '?' + URI.escape(params)
     end
 
-    def self.google_auth_uri(request, fetch, email, state)
+    def self.google_auth_uri(request, email, state)
       params = "client_id=#{G_CLIENT_ID}"
       params += "&state=#{state}" if state
-      fetch = true
-      if fetch
-        params += "&scope=openid email profile"
-        # params += "&scope=openid email"
-        params +=
-          "&redirect_uri=#{RP::redirect_uri(request, G_FETCH_REDIR)}"
-        params += "&response_type=code"
-        # params += "&response_type=id_token"
-      else
-        params += "&scope=openid email"
-        params +=
-          "&redirect_uri=#{RP::redirect_uri(request, G_LOGIN_REDIR)}"
-        params += "&response_type=id_token"
-      end
+      params += "&scope=openid email profile"
+      params +=
+        "&redirect_uri=#{RP::redirect_uri(request, G_FETCH_REDIR)}"
+      params += "&response_type=code"
       if email
         params += "&login_hint=#{email}" 
       end
@@ -152,33 +141,34 @@ module Chooser
       }
       uri = URI(FB_TOKEN_BASE)
       post = Net::HTTP::Post.new(uri.path)
+      post['Content-Type'] = 'application/x-www-form-urlencoded'
       post.set_form_data params
 
-      res = Net::HTTP.start(uri.hostname, uri.port, :use_ssl => true) do |http|
-        http.request(post)
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+      response = http.request(post)
+
+      if !response.kind_of?(Net::HTTPSuccess)
+        response.value # throws an exception
       end
 
-      if !res.kind_of?(Net::HTTPSuccess)
-        res.value # throws an exception
-      end
-
-      token = Hash[URI::decode_www_form(res.body)]['access_token']
+      token = Hash[URI::decode_www_form(response.body)]['access_token']
 
       # fetch userinfo
       uri = URI FB_USERINFO_BASE
       get = Net::HTTP::Get.new uri.request_uri
       get['Authorization'] = 'Bearer ' + token
       
-      res = Net::HTTP.start(uri.hostname, uri.port, :use_ssl => true) do |http|
-        http.request(get)
-      end
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+      response = http.request(get)
 
-      if !res.kind_of?(Net::HTTPSuccess)
-        res.value # throws an exception
+      if !response.kind_of?(Net::HTTPSuccess)
+        response.value # throws an exception
       end
 
       # parse json & twiddle field names
-      json = JSON.parse(res.body)
+      json = JSON.parse(response.body)
       json['displayName'] = json['name']
       json['photoUrl'] = "https://graph.facebook.com/#{json['id']}/picture"
       json['providerId'] = 'facebook.com'
@@ -197,32 +187,34 @@ module Chooser
       }
       uri = URI(G_TOKEN_BASE)
       post = Net::HTTP::Post.new(uri.path)
+      post['Content-Type'] = 'application/x-www-form-urlencoded'
       post.set_form_data params
 
-      res = Net::HTTP.start(uri.hostname, uri.port, :use_ssl => true) do |http|
-        http.request(post)
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+      response = http.request(post)
+
+      if !response.kind_of?(Net::HTTPSuccess)
+        response.value # throws an exception
       end
 
-      if !res.kind_of?(Net::HTTPSuccess)
-        res.value # throws an exception
-      end
-
-      token = JSON.parse(res.body)['access_token']
+      token = JSON.parse(response.body)['access_token']
 
       # fetch userinfo
       uri = URI G_USERINFO_BASE
       get = Net::HTTP::Get.new uri.request_uri
       get['Authorization'] = 'Bearer ' + token
-      res = Net::HTTP.start(uri.hostname, uri.port, :use_ssl => true) do |http|
-        http.request(get)
-      end
 
-      if !res.kind_of?(Net::HTTPSuccess)
-        res.value # throws an exception
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+      response = http.request(get)
+
+      if !response.kind_of?(Net::HTTPSuccess)
+        response.value # throws an exception
       end
 
       # parse json & twiddle field names
-      json = JSON.parse(res.body)
+      json = JSON.parse(response.body)
       json['displayName'] = json['name'] if json['name']
       json['photoUrl'] = json['picture'] if json['picture']
       json['providerId'] = 'google.com'
@@ -240,29 +232,31 @@ module Chooser
       }
       uri = URI(LIVE_TOKEN_BASE)
       post = Net::HTTP::Post.new(uri.path)
+      post['Content-Type'] = 'application/x-www-form-urlencoded'
       post.set_form_data params
 
-      res = Net::HTTP.start(uri.hostname, uri.port, :use_ssl => true) do |http|
-        http.request(post)
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+      response = http.request(post)
+
+      if !response.kind_of?(Net::HTTPSuccess)
+        response.value # throws an exception
       end
 
-      if !res.kind_of?(Net::HTTPSuccess)
-        res.value # throws an exception
-      end
-
-      body = res.body
+      body = response.body
       token = JSON.parse(body)['access_token']
 
       # fetch userinfo
       uri = URI LIVE_USERINFO_BASE
       get = Net::HTTP::Get.new(uri.request_uri)
       get['Authorization'] = 'Bearer ' + token
-      res = Net::HTTP.start(uri.hostname, uri.port, :use_ssl => true) do |http|
-        http.request(get)
-      end
+
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+      response = http.request(get)
 
       # parse json & twiddle field names
-      body = res.body
+      body = response.body
       json = JSON.parse(body)
       json['email'] = json['emails']['account']
       json['displayName'] = json['name'] if json['name']

@@ -1,5 +1,5 @@
 # encoding: utf-8
-# Copyright 2012 Google Inc.
+# Copyright 2012-14 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,10 +12,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 require 'sinatra'
 require './body'
 require './database'
-require './forms'
 require './color'
 require './rp'
 require './gat'
@@ -36,13 +36,6 @@ module Chooser
                            :old_secret => 'orthoepy ftl'
 
     ### App code
-    T451 = <<EOFEOF
-<html><head><title>451 Unavailable For Legal Reasons</title></head>
-<body><h2>451 Unavailable For Legal Reasons</h2></body></html>
-EOFEOF
-    get '/451' do
-      [451, TEXT_HTML, T451]
-    end
 
     # Home page
     get '/' do
@@ -52,8 +45,7 @@ EOFEOF
       if email
         # Session is active, branch to favorite-color app
         account = database.find_account email
-        s = Color.chooser(account, Page.new("Logged In!"))
-        return_html s
+        erb :home, :locals => Color.favorite(account)
 
       else
         # No session, they have to log in
@@ -66,8 +58,14 @@ EOFEOF
     #
     post '/get-color' do
       params = Body::parse_json request
-      params = RP::from_id_token params['id-token']
-      email = params['email']
+      id_token = params['id-token']
+      gat_token = params['git_token']
+      if id_token
+        params = RP::from_id_token id_token
+        email = params['email']
+      else
+        email = GAT::get_session(request, database, gat_token)
+      end
       if email
         account = database.find_account email
         if account
@@ -87,26 +85,27 @@ EOFEOF
     # Save favorite color, after they've picked it
     post '/set-color' do
       id_token = params['id_token']
+      gat_token = params['git_token']
       destination = params['dest'] || '/'
       if id_token
         # coming in from Android client
         jwt = RP::from_id_token id_token
         email = jwt['email']
-        puts "EMAIL FROM ID_TOKEN #{email}"
+      elsif gat_token
+        # coming in from Android gat flavor
+        email = GAT.get_session(request, database, gat_token)
       else
         # active session?
         email = session[:logged_in]
-        puts "EMAIL FROM SESSION #{email}"
         if !email
-          email = GAT.get_session(request, database)
-          puts "EMAIL FROM GAT #{email}"
+          from_gat = GAT.get_session(request, database)
         end
       end
 
       if !email 
         if destination == 'gat'
           # launch GAT login process
-          return_html GAT.login_page(request.host)
+          erb :gatlogin
         else
           redirect '/gat'
         end
@@ -133,15 +132,16 @@ EOFEOF
 
     # called back by GAT, just dispatch to the GAT JavaScript
     get '/gat-callback' do
-      GAT.callback_page('')
+      locals = { :developer_key => GAT.key, :post_body => '' }
+      erb :gatcallback, :locals => locals
     end
     post '/gat-callback' do
       request.body.rewind
-      GAT.callback_page(request.body.read)
+      locals = { :developer_key => GAT.key, :post_body => request.body.read }
+      erb :gatcallback, :locals => locals
     end
 
     get '/gat-signout' do
-      puts "GAT SIGNOUT"
       session[:logged_in] = nil
       redirect '/gat'
     end
@@ -161,48 +161,52 @@ EOFEOF
 
       # active session?
       email = session[:logged_in]
-      puts "EMAIL FROM SESSION #{email}"
       if !email
         email = GAT.get_session(request, database)
-        puts "EMAIL FROM GAT #{email}"
       end
 
       if !email
         # launch GAT login process
-        return_html GAT.login_page(request.host)
+        erb :gatlogin
 
       else
         session[:logged_in] = email
 
         # Session is active, branch to favorite-color app
         account = database.find_account(email)
-        puts "ACCOUNT FROM DB #{account}"
-        page = GAT.normal_page(request.host)
-        return_html Color.chooser(account, page, true)
+        if account.idp_is_google?
+          share_uri = "/share?k=#{database.set_share(email)}"
+        else
+          share_uri = nil
+        end
+        locals = Color.favorite(account)
+        locals[:share_uri] = share_uri
+        erb :gat, :locals => locals
       end
+    end
+
+    get '/share' do
+      email = database.get_share params['k']
+      account = database.find_account email 
+      erb :share, :locals => share_page(account)
     end
 
     ### Identity/Authentication/Authorization code
 
     # Come here to log in
     get '/account-login' do
-      p = Page.new('Login', ac_dot_js(request, RP::providers))
-      p.h2! 'Welcome to FavColor!'
-      p.payload! Forms.login(request)
-      return_html p.to_s
+      erb :accountlogin
     end
 
     # Come here to register a new account
     get '/account-create' do
-      p = Page.new('First-time Login', ac_dot_js(request))
-      p.h2! 'Welcome to FavColor!'
-      p.payload! Forms.register(request)
-      return_html p.to_s
+      erb :signup
     end
 
     # launch Persona sign-in process
     get '/persona-sign-in' do
-      return_html Persona.sign_in(params['email'])
+      # should be able to pass along email
+      erb :persona
     end
 
     # Check persona sign-in assertion
@@ -230,30 +234,11 @@ EOFEOF
       update_ac_js account
     end
 
-    # Google redirect with #fragment if we're just logging in
-    get '/gauth-login-redirect' do
-      script = "<script>\n" +
-        Page::parse_hash_script +
-        "var h = window.location.hash.slice(1);\n" +
-        "window.location = '/gauth-login-2?' + h;\n" +
-        "</script>"
-      p = Page.new('Redirecting', script)
-      p.h2! 'Redirecting' # user should't see this
-      return_html p.to_s
-    end
-
-    get '/gauth-login-2' do
-      email = database.get_state params['state']
-      session[:logged_in] = email
-      redirect '/'
-    end
-
-    # Google redirect with &params if we're fetching data
+    # Google redirect with &params 
     get '/gauth-fetch-redirect' do
       if params['error']
         auth_failed params['error_description']
       else
-        # puts "G CB"
         # params.each {|k,v| puts " #{k} => #{v}"}
         auth_succeeded(:google, params)
       end
@@ -293,7 +278,6 @@ EOFEOF
       
       if auth_uri
         database.set_state(state, email)
-        puts "AUTH URI: #{auth_uri}"
         [ 200, APPLICATION_JSON, "{ \"authUri\" : \"#{auth_uri}\" }" ]
       else
         account = database.find_account email
@@ -303,6 +287,10 @@ EOFEOF
     end
 
     # Kill session on logout
+    get '/logout' do
+      session[:logged_in] = nil
+      redirect '/'
+    end
     post '/logout' do
       session[:logged_in] = nil
       redirect '/'
@@ -359,10 +347,11 @@ EOFEOF
 
     # tried to register an account with an existing email address
     get '/dupe' do
-      p = Page.new "Duplicate account!"
-      p.h2! "Sorry, that email is taken."
-      p.payload! Forms.dupe
-      return_html p.to_s
+      locals = {
+        :error_title => 'Duplicate account!',
+        :error_message => 'Sorry, that email is taken.'
+      }
+      erb :error, :locals => locals
     end
 
     # login form submission
@@ -441,20 +430,14 @@ EOFEOF
     end
 
     # will redirect back to '/'
-    def return_html html
-      [200, TEXT_HTML, html]
-    end
-
     def update_ac_js account
-      fields = "accountchooser.CONFIG.storeAccount = {\n"
+      fvals = []
       ['email', 'displayName', 'photoUrl', 'providerId'].each do |name|
         field = account[name]
-        fields += "#{name}: \"#{field}\",\n" if is_useful?(field)
+        fvals << "#{name}: \"#{field}\"" if is_useful?(field)
       end
-      fields += '};'
-      p = Page.new('Update ac.js', ac_dot_js(request, fields))
-      p.h2! 'Updating AccountChooser' # user shouldn't see this
-      return_html p.to_s
+      fields = fvals.join(', ')
+      erb :updateac, :locals => { :ac_fields => fields }
     end
 
     MARKETING_HEADERS = {
@@ -464,7 +447,7 @@ EOFEOF
       "Access-Control-Max-Age" => "86400"
     }
     MARKETING_TEXT = "<img src=\"https://favcolor.net/g60.png\" " +
-      "style=\"float:left;width: 150px;\"/>\n" +
+      "style=\"float:left;width:150px;box-shadow: 3px 3px 8px #222; margin-bottom:10px;\"/>\n" +
       "<p style='margin-left: 160px;'>" +
       "FavColor — We know your favorite!</p>"
 
@@ -472,28 +455,54 @@ EOFEOF
       [ 200, MARKETING_HEADERS, MARKETING_TEXT ]
     end
 
+    # testbed for the HTTP status code 451 proposal
+    T451 = <<EOFEOF
+<html><head><title>451 Unavailable For Legal Reasons</title></head>
+<body><h2>451 Unavailable For Legal Reasons</h2></body></html>
+EOFEOF
+    get '/451' do
+      [451, TEXT_HTML, T451]
+    end
+
     ### Utility code
 
     private
 
+    def share_page account
+      fave = account['color']
+      name = account['displayName'] || account['email']
+      locals = {}
+      locals[:fave_color] = fave
+      locals[:display_name] = name
+      if fave
+        r = fave[0..1]; g = fave[2..3]; b = fave[4..5]
+        locals[:rgb] = "0x#{r}, 0x#{g}, 0x#{b}"
+      end
+      locals
+    end
+
     def auth_failed problem
-      p = Page.new 'Authorization failed'
-      p.h2! 'Authorization failed'
-      p.payload! "<p>#{problem} [<a href='/'>Try again</a>]</p>"
-      [403, TEXT_HTML, p.to_s]
+      locals = {
+        :problem_title => 'Authorization failed',
+        :problem_header => 'Authorization failed',
+        :problem_detail => problem
+      }
+      html = erb(:problem, :locals => locals)
+      [403, TEXT_HTML, html]
     end
 
     def auth_succeeded(provider, params)
       code = params['code']
-      account = Account.new(RP::fetch_account(provider, code, request))
+      idp_account = Account.new(RP::fetch_account(provider, code, request))
 
       # we want to update accountchooser with whoever they logged in with,
       #  not who we might think their primary IDP is.
+      account = idp_account.dup
       account = update_account account
       session[:logged_in] = account['email']
       account = account.clone
       account['providerId'] = RP::provider_name provider
-      update_ac_js account
+      update_ac_js idp_account
     end
 
     def update_account incoming
@@ -523,17 +532,6 @@ EOFEOF
       incoming
     end
 
-    AC_JS = '<script type="text/javascript" ' +
-      'src="https://www.accountchooser.com/ac.js" ></script>' + "\n" +
-      "<script type='text/javascript'>\n" +
-      "accountchooser.CONFIG.uiConfig = {\n  title: \"Log in to FavColor\",\n"
-
-    def ac_dot_js(req, extras = '')
-      branding = "  branding: \"https://#{req.host}/" +
-        "login-marketing\"\n};\n"
-      AC_JS + branding + extras + "\n</script>"
-    end
-
     def logger
       @logger = Logger.new(STDOUT) unless @logger
       @logger
@@ -552,5 +550,6 @@ EOFEOF
       rand(10 ** 9).to_s + rand(10 ** 9).to_s
     end
   end
+
 end
 
