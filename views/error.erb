@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script type="text/javascript" src="jscolor/jscolor.js" ></script>
+    <script type="text/javascript" src="javascript/rgb.js" ></script>
+    <link rel="stylesheet" type="text/css" href="/chooser.css" />
+    <title>Chooser: <%= error_title %></title>
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+    <script>
+      var fc_config = { rgb : [0x96, 0x60, 0x88], run : false };
+    </script>
+  </head>
+  <body>
+    <div class="row-fluid" id="container">
+      <div class="span3" id="left-c">
+	<canvas id="cR" width="255" height="255"></canvas><br /><canvas id="cG" width="255" height="255"></canvas><br /><canvas id="cB" width="255" height="255"></canvas><br /></div>
+      <div class="span8">
+	<div class="row">
+	  <div class="span12">
+	    <h2><%= error_message %></h2>
+	  </div>
+	</div>
+	<script src="//code.jquery.com/jquery-latest.js"></script>
+	<script src="js/bootstrap.min.js"></script>
+	<form method="get" action="/account-create">
+	  <input type="submit" value="OK"/>
+	</form>
+      </div>
+    </div>
+  </body>
+</html>

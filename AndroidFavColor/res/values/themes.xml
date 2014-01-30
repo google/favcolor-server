@@ -1,5 +1,0 @@
-<resources>
-    <style name="MyTheme" parent="@android:style/Theme.Holo">
-        <!-- Any customizations for your app running on pre-3.0 devices here -->
-    </style>
-</resources>

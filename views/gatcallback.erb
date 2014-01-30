@@ -1,0 +1,53 @@
+<html>
+  <head>
+    <script type="text/javascript" src="jscolor/jscolor.js"></script>
+    <link rel='stylesheet' type='text/css' href='/chooser.css' />
+    <script src='https://apis.google.com/js/plusone.js'></script>
+    <script src='javascript/rgb.js'></script>
+    <script>var fc_config = { rgb : [0x96, 0x60, 0x88], run : false };</script>
+    <title>FavColor: We Know Your Favorite!</title>
+    <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+    <script type="text/javascript" src="//www.google.com/recaptcha/api/js/recaptcha_ajax.js"></script>
+    <script type="text/javascript" src="//www.accountchooser.biz/client.js"></script>
+    <script type="text/javascript" src="//www.gstatic.com/authtoolkit/staging/js/gitkit.js"></script>
+    <link type="text/css" rel="stylesheet" href="//www.gstatic.com/authtoolkit/staging/css/gitkit.css" />
+
+    <script type="text/javascript">
+      function load() {
+      	var config = {
+      	  developerKey: "<%= developer_key %>",
+      	  callbackUrl: "/gat-callback",
+      	  homeUrl: "/gat",
+      	  forgotUrl: "/gat-forgot",
+      	  logoutUrl: "/gat-signout",
+      	  siteName: "FavColor + GAT",
+      	  idps: ["googleplus", "facebook", "yahoo"],
+      	  idpButtons: 3,
+      	  acuiconfig: {
+      	    title: "FavColor + GAT",
+      	    branding: "https://favcolor.net/login-marketing"
+          }
+        };
+        google.identitytoolkit.handleGatOp(
+         '#gatDiv', 
+         config, 
+         decodeURIComponent('<%= post_body %>'));
+      }
+    </script>
+    <script type="text/javascript" src="//apis.google.com/js/client.js?onload=load"></script>
+  </head>
+  <body>
+    <div class="row-fluid" id="container">
+      <div class="span3" id="left-c">
+	<canvas id="cR" width="255" height="255">/* */</canvas>
+	<br/>
+	<canvas id="cG" width="255" height="255">/* */</canvas>
+	<br/>
+	<canvas id="cB" width="255" height="255">/* */</canvas>
+      </div>
+      <div class="span2 offset6">
+	<div id="gatDiv" style="float: right;"/>
+      </div>
+    </div>
+  </body>
+</html>

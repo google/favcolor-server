@@ -1,0 +1,66 @@
+<html>
+  <head>
+    <script type="text/javascript" src="jscolor/jscolor.js"></script>
+    <link rel='stylesheet' type='text/css' href='/chooser.css' />
+    <script src='https://apis.google.com/js/plusone.js'></script>
+    <script src='javascript/rgb.js'></script>
+    <script>
+      var fc_config = { rgb : [ <%= rgb %> ], run : true };
+    </script>
+    <title>FavColor: We Know Your Favorite!</title>
+    <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+    <script type="text/javascript" src="//www.accountchooser.biz/client.js"></script>
+    <script type="text/javascript" src="//www.gstatic.com/authtoolkit/staging/js/gitkit.js"></script>
+    <link type="text/css" rel="stylesheet" href="//www.gstatic.com/authtoolkit/staging/css/gitkit.css" />
+
+    <script type="text/javascript">
+      window.google.identitytoolkit.signInButton(
+      	'#navbar',
+      	{
+      	  callbackUrl: "/gat-callback",
+      	  logoutUrl: "/gat-signout",
+      	  idps: ["googleplus", "facebook", "yahoo"],
+      	});
+    </script>
+  </head>
+  <body>
+    <div class="row-fluid" id="container">
+      <div class="span3" id="left-c">
+	<canvas id="cR" width="255" height="255">/* */</canvas>
+	<br/>
+	<canvas id="cG" width="255" height="255">/* */</canvas>
+	<br/>
+	<canvas id="cB" width="255" height="255">/* */</canvas>
+      </div>
+      <div class="span5">
+	<div class="row">
+          <h2>Welcome, <%= display_name %>!</h2>
+          <script src="/bootstrap/js/bootstrap.min.js">/* */</script>
+	</div>
+	<div class="row">
+          <div>
+            <form method="post" action="/set-color?dest=/gat">
+              <p></p>
+              <p><% greeting %></p>
+              <input class="color { pickerFaceColor:'transparent',pickerFace:3,pickerBorder:0,pickerInsetColor:'black',pickerPosition:'top'}" value="<%= favorite_color %>" name="color"/>
+              <p>If you don’t like this color, click on its geek name just above, and pick a new one.</p>
+              <p>
+                <input type="submit" value="Set favorite color!"/>
+              </p>
+            </form>
+          </div>
+	</div>
+	<% if share_uri %>
+	  <div class="row">
+	    <div class="g-plus" data-action="share"
+	         data-href="<%= share_uri %>">
+	    </div>
+	  </div>
+	<% end %>
+      </div>
+      <div class="span3" id="gatHolder">
+	<div id="navbar"/>
+      </div>
+    </div>
+  </body>
+</html>

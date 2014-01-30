@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script type="text/javascript" src="jscolor/jscolor.js" ></script>
+    <script type="text/javascript" src="javascript/rgb.js" ></script>
+    <link rel="stylesheet" type="text/css" href="/chooser.css" />
+    <title>FavColor: Logged In!</title>
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+    <script>
+      var fc_config = { rgb : [ <%= rgb %> ], run : true };
+    </script>
+  </head>
+  <body><div class="row-fluid" id="container">
+      <div class="span3" id="left-c">
+	<canvas id="cR" width="255" height="255"></canvas><br /><canvas id="cG" width="255" height="255"></canvas><br /><canvas id="cB" width="255" height="255"></canvas><br /></div>
+      <div class="span8">
+	<div class="row">
+	  <div class="span12">
+	    <h2>Welcome, <%= display_name %>! <img src="<%= photo_url %>" /></h2>
+	  </div>
+	</div>
+	<script src="//code.jquery.com/jquery-latest.js"></script>
+	<script src="js/bootstrap.min.js"></script>
+
+        <div>
+          <form method="post" action="/set-color?dest=/">
+            <p></p>
+            <p><%= greeting %></p>
+            <input class="color { pickerFaceColor:'transparent',pickerFace:3,pickerBorder:0,pickerInsetColor:'black',pickerPosition:'top'}" value="<%= favorite_color %>" name="color"/>
+            <p>If you don’t like this color, click on its geek name just above, and pick a new one.</p>
+            <p>
+              <input type="submit" value="Set favorite color!"/>
+            </p>
+          </form>
+        </div>
+        <p>
+          <form method="post" action="/logout">
+            <input type="submit" value="Log Out"/>
+          </form>
+        </p>
+	<!-- end color -->
+      </div>
+    </div>
+  </body>
+</html>

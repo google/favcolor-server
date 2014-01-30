@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script type="text/javascript" src="https://www.accountchooser.com/ac.js" ></script>
+    <script type='text/javascript'>
+      accountchooser.CONFIG.uiConfig = {
+        title: "Log in to FavColor",
+        branding: "https://favcolor.net/login-marketing"
+      };
+    </script>
+    <script type="text/javascript" src="jscolor/jscolor.js" ></script>
+    <script type="text/javascript" src="javascript/rgb.js" ></script>
+    <link rel="stylesheet" type="text/css" href="/chooser.css" />
+    <title>Chooser: Sign-up</title>
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+    <script>
+      var fc_config = { rgb : [0x96, 0x60, 0x88], run : false };
+    </script>
+  </head>
+  <body>
+    <div class="row-fluid" id="container">
+      <div class="span3" id="left-c">
+	<canvas id="cR" width="255" height="255"></canvas><br /><canvas id="cG" width="255" height="255"></canvas><br /><canvas id="cB" width="255" height="255"></canvas><br /></div>
+      <div class="span8">
+	<div class="row">
+	  <div class="span12">
+	    <h2>Welcome to FavColor! </h2>
+	  </div>
+	</div>
+	<script src="//code.jquery.com/jquery-latest.js"></script>
+	<script src="js/bootstrap.min.js"></script>
+	<div>
+	  <form method="post" action="/new-login">
+	    <div class="row">
+	      <legend>Thank you for your first visit to FavColor; please tell us about yourself.</legend>
+	    </div>
+	    <div class="row">
+	      <div class="span12">
+		<input id="email" name="email" placeholder="email" class="input-medium"/>
+	      </div>
+	    </div>
+	    <div class="row">
+	      <div class="span12">
+		<span>What should I call you?</span>
+		<br/>
+		<input id="displayName" name="displayName"/>
+	      </div>
+	    </div>
+	    <div class="row">
+	      <div class="span12">
+		<span>URL of a picture?</span>
+		<br/>
+		<input id="photoUrl" name="photoUrl"/>
+	      </div>
+	    </div>
+	    <div class="row">
+	      <div class="span12">
+		<p>
+		  <div class="input-append" style="display: inline;">
+		    <input id="password" type="password" class="input-medium" name="password" placeholder="password"/>
+		    <button class="btn" type="Submit" value="Go!">
+		      <span>Go!</span>
+		    </button>
+		  </div>
+		  <div style="display: inline; position:relative;top: 5px;">
+		    <span>  Or, use one of </span>
+		    <button name="providerId" value="google.com">
+		      <img src="G.png" alt="log in with Google" style="height: 1.2em"/>
+		    </button>
+		    <button name="providerId" value="live.com">
+		      <img src="Live.png" alt="log in with Live.com" style="height: 1.2em"/>
+		    </button>
+		    <button name="providerId" value="facebook.com">
+		      <img src="fb.png" alt="log in with Facebook" style="height: 1.2em"/>
+		    </button>
+		    <hr/>
+		  </div>
+		</p>
+	      </div>
+	    </div>
+	  </form>
+	  <div class="row">
+	    <div class="span12">
+	      <form method="get" action="/account-login">
+		<span>Already registered?</span>
+		<input type="submit" value="Log in!"/>
+	      </form>
+	    </div>
+	  </div>
+	</div>
+
+      </div>
+    </div>
+  </body>
+</html>

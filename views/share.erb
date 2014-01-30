@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script type="text/javascript" src="jscolor/jscolor.js" ></script>
+    <script type="text/javascript" src="javascript/rgb.js" ></script>
+    <link rel="stylesheet" type="text/css" href="/chooser.css" />
+    <title>Chooser: <%= display_name %>&rsquo;s  Favorite Color</title>
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+    <script type="text/javascript">
+      <% if fave_color %>
+        var fc_config = { rgb : [ <%= rgb %> ], run : false };
+      <% else %>
+        var fc_config = { rgb : [0x96, 0x60, 0x88], run : false };
+      <% end %>
+    </script>
+  </head>
+  <body>
+    <div class="row-fluid" id="container">
+      <div class="span3" id="left-c">
+        <canvas id="cR" width="255" height="255"></canvas><br /><canvas id="cG" width="255" height="255"></canvas><br /><canvas id="cB" width="255" height="255"></canvas><br />
+      </div>
+      <div class="span8">
+        <div class="row">
+          <div class="span12">
+            <h2><%= display_name %>&rsquo;s Favorite Color </h2>
+          </div>
+        </div>
+        <script src="//code.jquery.com/jquery-latest.js"></script>
+        <script src="js/bootstrap.min.js"></script>
+        <p>
+          <%= display_name %> was visiting 
+          <a href='http://favcolor.net/gat'>FavColor</a>, an identity demo
+          app that lets you pick your favorite color... and share it! </p>
+          <% if fave_color %>
+            <p>Want to see <%= display_name %>&rsquo;s favorite?
+	      <button id="morph" value="R, G, and B">Morph it in!</button>
+          <% else %>
+            <p>Oddly, <%= display_name %> didn&rsquo;t get around to picking a
+            favorite, but in an effort to avoid disappointment, we&rsquo;re
+            displaying some pretty color tiles on the left of the screen.    
+          <% end %>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,165 @@
+<html>
+  <head>
+    <title>Sign in with Persona</title>
+    <link rel="stylesheet" type="text/css" href="/chooser.css"/>
+    <link rel="stylesheet" type="text/css" href="/bootstrap/css/bootstrap.min.css"/>
+    <script type="text/javascript">
+      var signinLink = document.getElementById('sign-in-button');
+      if (signinLink) {
+        signinLink.onclick = function() { 
+          var email = document.getElementById('email').value;
+            /* loggedInUser: email, */
+            navigator.id.watch( {
+              onlogin: verifyAssertion,
+              onlogout: onlo
+            } );
+        navigator.id.request(); };
+      }
+
+      function simpleXhrSentinel(xhr) {
+        return function() {
+          if (xhr.readyState == 4) {
+            if (xhr.status == 200){
+              // reload page to reflect new login state
+              window.location = '/persona-succeeded'
+            } else {
+              navigator.id.logout();
+              alert("XMLHttpRequest error: " + xhr.status); 
+            } 
+          }
+        }
+      }
+
+      function verifyAssertion(assertion) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "/persona-assertion", true);
+
+        // see http://www.openjs.com/articles/ajax_xmlhttp_using_post.php
+        var param = "assert=" + assertion;
+        xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        xhr.send(param); // for verification by your backend
+
+        xhr.onreadystatechange = simpleXhrSentinel(xhr); 
+      }
+
+      function onlo() {
+        // Your backend must return HTTP status code 200 to indicate successful
+        // sign out (usually the resetting of one or more session variables) and
+        // it must arrange for the binding of currentUser to 'null' when the page
+        // is reloaded
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "/xhr/sign-out", true);
+        xhr.send(null);
+        xhr.onreadystatechange = simpleXhrSentinel(xhr); 
+      }
+      function onlo() {
+        alert("Logout!")
+      }
+    </script>
+  </head>
+  <body>
+    <div class="row-fluid" id="container">
+      <div class="span3" id="left">
+	<img src="g60s.png"/>
+	<br/>
+	<img src="r96s.png"/>
+	<br/>
+	<img src="b88s.png"/>
+      </div>
+      <div class="span8">
+	<h3>Persona Sign-in</h3>
+	<p>
+          <input id="email" name="email" placeholder="email" class="input-medium"/>
+          <button id="sign-in-button" class="btn">
+            <span>Sign in with Persona</span>
+          </button>
+	</p>
+	<p>You shouldn’t have to do this.</p>
+	<script src="/bootstrap/js/bootstrap.min.js">/* */</script>
+	<script src="https://login.persona.org/include.js">/* */</script>
+      </div>
+    </div>
+  </body>
+
+  <head>
+    <title>Sign in with Persona</title>
+    <link rel="stylesheet" type="text/css" href="/chooser.css"/>
+    <link rel="stylesheet" type="text/css" href="/bootstrap/css/bootstrap.min.css"/>
+    <script type="text/javascript">
+      var signinLink = document.getElementById('sign-in-button');
+      if (signinLink) {
+      signinLink.onclick = function() { 
+      var email = document.getElementById('email').value;
+      /* loggedInUser: email, */
+      navigator.id.watch( {
+      onlogin: verifyAssertion,
+      onlogout: onlo
+      } );
+      navigator.id.request(); };
+      }
+
+      function simpleXhrSentinel(xhr) {
+      return function() {
+      if (xhr.readyState == 4) {
+      if (xhr.status == 200){
+      // reload page to reflect new login state
+      window.location = '/persona-succeeded'
+      } else {
+      navigator.id.logout();
+      alert("XMLHttpRequest error: " + xhr.status); 
+      } 
+      }
+      }
+      }
+
+      function verifyAssertion(assertion) {
+      var xhr = new XMLHttpRequest();
+      xhr.open("POST", "/persona-assertion", true);
+
+      // see http://www.openjs.com/articles/ajax_xmlhttp_using_post.php
+      var param = "assert=" + assertion;
+      xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+      xhr.send(param); // for verification by your backend
+
+      xhr.onreadystatechange = simpleXhrSentinel(xhr); 
+      }
+
+      function onlo() {
+      // Your backend must return HTTP status code 200 to indicate successful
+      // sign out (usually the resetting of one or more session variables) and
+      // it must arrange for the binding of currentUser to 'null' when the page
+      // is reloaded
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", "/xhr/sign-out", true);
+      xhr.send(null);
+      xhr.onreadystatechange = simpleXhrSentinel(xhr); 
+      }
+      function onlo() {
+      alert("Logout!")
+      }
+    </script>
+  </head>
+  <body>
+    <div class="row-fluid" id="container">
+      <div class="span3" id="left">
+	<img src="g60s.png"/>
+	<br/>
+	<img src="r96s.png"/>
+	<br/>
+	<img src="b88s.png"/>
+      </div>
+      <div class="span8">
+	<h3>Persona Sign-in</h3>
+	<p>
+          <input id="email" name="email" placeholder="email" class="input-medium"/>
+          <button id="sign-in-button" class="btn">
+            <span>Sign in with Persona</span>
+          </button>
+	</p>
+	<p>You shouldn’t have to do this.</p>
+	<script src="/bootstrap/js/bootstrap.min.js">/* */</script>
+	<script src="https://login.persona.org/include.js">/* */</script>
+      </div>
+    </div>
+  </body>
+</html>
