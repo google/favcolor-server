@@ -1,0 +1,13 @@
+.DS_Store
+._.DS_Store
+Log
+accounts/*
+debug.sh
+*.pem
+gat-cert
+public/javascript/*
+saves/*
+service-account.p12
+service.pem
+setup.sh
+
